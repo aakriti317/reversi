@@ -2,12 +2,14 @@
 #define BOARD_H
 #define BLACK 0
 #define WHITE 1
-
-class Board
+#include <QObject>
+class Board : public QObject
 {
+    Q_OBJECT
+public slots:
+    void piece_added_slot(const qint32 row,const qint32 column,const QString &color);
 public:
     Board();
-    void add_piece(int row,int column,int color);
 };
 
 #endif // BOARD_H

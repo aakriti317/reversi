@@ -1,7 +1,9 @@
 import QtQuick 2.0
 
 Item {
-
+    signal piece_added_signal(int row,int column,string color)
+    property string current_color: "BLACK"
+    objectName: "board"
     id : board
     width: 400
     height: 400
@@ -42,14 +44,18 @@ Item {
                     else
                         occupied=false
                 }
-
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
                         if(!parent.occupied)
                         {
                             parent.occupied=true
-                            parent.piece_color="WHITE"
+                            parent.piece_color=current_color
+                            piece_added_signal(row,column,current_color)
+                            if(current_color=="BLACK")
+                                current_color="WHITE"
+                            else
+                                current_color="BLACK"
 
                         }
                     }
