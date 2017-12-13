@@ -2,12 +2,13 @@ import QtQuick 2.0
 
 
 Rectangle {
+
     id: piece
-    width: 20
-    height: 20
-    radius: 10
+    width: 25
+    height: 25
+    radius: 13
     border.width: 1
-    color: "white"
+
 
     states: [
         State {
@@ -15,6 +16,15 @@ Rectangle {
             PropertyChanges {
                 target: piece
                 color: "black"
+            }
+
+        },
+        State {
+            name: "WHITE"
+            PropertyChanges {
+                target: piece
+                color: "white"
+
             }
         }
 
