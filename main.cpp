@@ -16,8 +16,7 @@ int main(int argc, char *argv[])
         return -1;
     QObject *rootobject = engine.rootObjects().first();
     QObject *item=rootobject->findChild<QObject*>("board");
-    Board board;
-    QObject::connect(item, SIGNAL(piece_added_signal(qint32,qint32,QString)),
-                     &board, SLOT(piece_added_slot(qint32,qint32,QString)));
+    Board board(item);
+    //board.occupy_cell(4,5,"WHITE");
     return app.exec();
 }

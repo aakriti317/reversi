@@ -8,7 +8,9 @@ Item {
     {
         var i=row*8+column
         if(grid.children[i].occupied)
+        {
             grid.children[i].piece_color=color
+        }
     }
     function occupy_cell(row,column,color)
     {
