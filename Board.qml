@@ -3,11 +3,28 @@ import QtQuick 2.0
 Item {
     signal piece_added_signal(int row,int column,string color)
     property string current_color: "BLACK"
+
+    function change_color(row,column,color)
+    {
+        var i=row*8+column
+        if(grid.children[i].occupied)
+            grid.children[i].piece_color=color
+    }
+    function occupy_cell(row,column,color)
+    {
+        var i=row*8+column
+        if(!grid.children[i].occupied)
+        {
+            grid.children[i].piece_color=color
+            grid.children[i].occupied=true
+        }
+    }
     objectName: "board"
     id : board
     width: 400
     height: 400
     Grid {
+        id: grid
         rows: 8
         columns: 8
         Repeater {
@@ -17,8 +34,7 @@ Item {
                 property int column: index%8
                 property string piece_color: ""
                 property bool occupied: false
-                property string uid: "rectangle"+row+column
-                id: uid
+                objectName: "cell"+row+column
                 width : 50
                 height :50
                 border.color: "#000000"
