@@ -1,8 +1,7 @@
 import QtQuick 2.0
 
 Item {
-    signal piece_added_signal(int row,int column,string color)
-    property string current_color: "BLACK"
+    signal piece_added_signal(int row,int column)
 
     function change_color(row,column,color)
     {
@@ -50,31 +49,13 @@ Item {
                     visible: occupied
 
                 }
-                Component.onCompleted:{
-                    if((row==3 && column==3) || (row==4 && column==4)){
-                        piece_color="WHITE"
-                        occupied=true
-                    }
-                    else if ((row==3 && column==4) || (row==4 && column==3)){
-                        piece_color="BLACK"
-                        occupied=true
-                    }
-                    else
-                        occupied=false
-                }
+
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
                         if(!parent.occupied)
                         {
-                            parent.occupied=true
-                            parent.piece_color=current_color
-                            piece_added_signal(row,column,current_color)
-                            if(current_color=="BLACK")
-                                current_color="WHITE"
-                            else
-                                current_color="BLACK"
-
+                            piece_added_signal(row,column)
                         }
                     }
                 }
