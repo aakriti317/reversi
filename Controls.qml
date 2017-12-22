@@ -1,29 +1,60 @@
 import QtQuick 2.0
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.3
+import QtQuick.Controls 1.4
 
 Item
 {
+    objectName: "controls"
+    function set_score_board(b_score,w_score)
+    {
+        black_score.text=b_score
+        white_score.text=w_score
+    }
+    function status_update(message)
+    {
+        status.text = message + "\n" + status.text
+    }
+
     id : controls
     width: 200
     height: 400
-    ColumnLayout {
+    ColumnLayout
+    {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.fill: parent
-        ColumnLayout{
+        ColumnLayout
+        {
             Layout.alignment: Qt.AlignLeft | Qt.AlignTop
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            Button {
+            Button
+            {
                 text: "START"
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 Layout.fillWidth: true
-                highlighted: true
+                //highlighted: true
             }
-            Button {
+            Button
+            {
                 text: "QUIT"
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                Layout.fillWidth: true
+            }
+            Label
+            {
+                text: "STATUS"
+                font.bold: true
+
+            }
+
+            TextArea
+            {
+                id: status
+                text: ""
+                readOnly: true
+                Layout.fillHeight: true
                 Layout.fillWidth: true
             }
         }
@@ -46,17 +77,23 @@ Item
             }
 
 
-            Label{
+            Label
+            {
                 text: "BLACK:"
             }
-            Label{
-                text: "22"
+            Label
+            {
+                id: black_score
+                text: "2"
             }
-            Label{
+            Label
+            {
                 text: "WHITE:"
             }
-            Label{
-                text: "40"
+            Label
+            {
+                id: white_score
+                text: "2"
             }
         }
     }

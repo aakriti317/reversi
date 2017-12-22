@@ -37,7 +37,7 @@ Item {
                 property bool occupied: false
                 objectName: "cell"+row+column
                 width : 50
-                height :50
+                height: 50
                 border.color: "#000000"
                 color : (row + column) % 2 ? "#95582C" : "#E5CB7E"
                 Piece {

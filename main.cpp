@@ -15,8 +15,8 @@ int main(int argc, char *argv[])
     if (engine.rootObjects().isEmpty())
         return -1;
     QObject *rootobject = engine.rootObjects().first();
-    QObject *item=rootobject->findChild<QObject*>("board");
-    Board board(item);
-    //board.occupy_cell(4,5,"WHITE");
+    QObject *bobj=rootobject->findChild<QObject*>("board");
+    QObject *cobj=rootobject->findChild<QObject*>("controls");
+    Board board(bobj,cobj);
     return app.exec();
 }

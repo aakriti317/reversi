@@ -2,14 +2,15 @@
 #include <QDebug>
 #include <iostream>
 using namespace std;
-Board::Board(QObject *obj)
+Board::Board(QObject *bobj,QObject *cobj)
 {
-    board_obj=obj;
+    board_obj=bobj;
+    controls_object=cobj;
     QObject::connect(board_obj, SIGNAL(piece_added_signal(qint32,qint32)),
                      this, SLOT(piece_added_slot(qint32,qint32)));
-    for(int row=0;row<8;row++)
-        for(int col=0;col<8;col++)
-            board_state[row][col]=EMPTY;
+        for(int row=0;row<8;row++)
+            for(int col=0;col<8;col++)
+                board_state[row][col]=EMPTY;
     occupy_cell(3,3,"WHITE");
     occupy_cell(4,4,"WHITE");
     occupy_cell(3,4,"BLACK");
@@ -19,27 +20,68 @@ Board::Board(QObject *obj)
 void Board::piece_added_slot(const qint32 row, const qint32 column)
 {
     set_valid_moves(current_color);
-    print_valid_moves();
+    bool moves_present=false;
+    bool chance_flipped=false;
     int clicked_index=row*8+column;
-    if(move_list[clicked_index])
+    for(int i=0;i<64;i++)
+        moves_present=moves_present || move_list[i];
+    if(moves_present)
     {
-        if(current_color==BLACK)
-            occupy_cell(row,column,"BLACK");
-        else if(current_color==WHITE)
-            occupy_cell(row,column,"WHITE");
-        capture_pieces(row,column,current_color);
-        current_color=1-current_color;
+        if(move_list[clicked_index])
+        {
+            if(current_color==BLACK)
+                occupy_cell(row,column,"BLACK");
+            else if(current_color==WHITE)
+                occupy_cell(row,column,"WHITE");
+            capture_pieces(row,column,current_color);
+            current_color=1-current_color;
+            chance_flipped=true;
+            calculate_score();
+        }
     }
-    print_board();
+    else
+    {
+        current_color=1-current_color;
+        chance_flipped=true;
+        QMetaObject::invokeMethod(controls_object, "status_update",
+                                  Q_ARG(QVariant,"No more moves left, passing the turn"));
+    }
+    if(has_game_ended())
+    {
+        QString message;
+        if(score_board[BLACK]>score_board[WHITE])
+            message="Game Ended! Black Wins.";
+        else if(score_board[BLACK]<score_board[WHITE])
+            message="Game Ended! White Wins.";
+        else
+            message="Game Ended! It's a tie.";
+        QMetaObject::invokeMethod(controls_object, "status_update",
+                                  Q_ARG(QVariant,message));
+    }
+    if(chance_flipped)
+    {
+        QString current_color_string;
+        if(current_color==WHITE)
+            current_color_string="WHITE's turn";
+        else if(current_color==BLACK)
+            current_color_string="BLACK's turn";
+        QMetaObject::invokeMethod(controls_object, "status_update",
+                                  Q_ARG(QVariant,current_color_string));
+    }
 }
 
-void Board::occupy_cell(int row, int column, QString color){
+void Board::occupy_cell(int row, int column, QString color)
+{
     QMetaObject::invokeMethod(board_obj, "occupy_cell",
                               Q_ARG(QVariant,row),Q_ARG(QVariant,column),Q_ARG(QVariant,color));
-    if(color=="WHITE")
+    if(color == "WHITE")
+    {
         board_state[row][column]=WHITE;
+    }
     else if(color == "BLACK")
+    {
         board_state[row][column]=BLACK;
+    }
 }
 void Board::print_board()
 {
@@ -216,9 +258,6 @@ void Board::capture_pieces(int row,int col,int color)
         {
             if (board_state[i][col]==1-color)
             {
-                //                QMetaObject::invokeMethod(board_obj, "change_color",
-                //                                          Q_ARG(QVariant,i),Q_ARG(QVariant,col),Q_ARG(QVariant,color_string));
-                //                board_state[i][col]=color;
                 list[i*8+col]=true;
             }
             else if (board_state[i][col]==EMPTY)
@@ -230,9 +269,6 @@ void Board::capture_pieces(int row,int col,int color)
         {
             if (board_state[i][col]==1-color)
             {
-                //                QMetaObject::invokeMethod(board_obj, "change_color",
-                //                                          Q_ARG(QVariant,i),Q_ARG(QVariant,col),Q_ARG(QVariant,color_string));
-                //                board_state[i][col]=color;
                 list[i*8+col]=true;
             }
             else if (board_state[i][col]==EMPTY)
@@ -245,9 +281,6 @@ void Board::capture_pieces(int row,int col,int color)
         {
             if (board_state[row][i]==1-color)
             {
-                //                QMetaObject::invokeMethod(board_obj, "change_color",
-                //                                          Q_ARG(QVariant,row),Q_ARG(QVariant,i),Q_ARG(QVariant,color_string));
-                //                board_state[row][i]=color;
                 list[row*8+i]=true;
             }
             else if (board_state[row][i]==EMPTY)
@@ -259,12 +292,8 @@ void Board::capture_pieces(int row,int col,int color)
         {
             if (board_state[row][i]==1-color)
             {
-                //                QMetaObject::invokeMethod(board_obj, "change_color",
-                //                                          Q_ARG(QVariant,row),Q_ARG(QVariant,i),Q_ARG(QVariant,color_string));
-                //                board_state[row][i]=color;
                 list[row*8+i]=true;
             }
-
             else if (board_state[row][i]==EMPTY)
                 break;
             else if (board_state[row][i]==color)
@@ -275,9 +304,6 @@ void Board::capture_pieces(int row,int col,int color)
         {
             if (board_state[row-i][col-i]==1-color)
             {
-                //                QMetaObject::invokeMethod(board_obj, "change_color",
-                //                                          Q_ARG(QVariant,row-i),Q_ARG(QVariant,col-i),Q_ARG(QVariant,color_string));
-                //                board_state[row-i][col-i]=color;
                 list[(row-i)*8+(col-i)]=true;
             }
             else if (board_state[row-i][col-i]==EMPTY)
@@ -290,10 +316,6 @@ void Board::capture_pieces(int row,int col,int color)
         {
             if (board_state[row+i][col+i]==1-color)
             {
-                //                QMetaObject::invokeMethod(board_obj, "change_color",
-                //                                          Q_ARG(QVariant,row+i),Q_ARG(QVariant,col+i),Q_ARG(QVariant,color_string));
-
-                //                board_state[row+i][col+i]=color;
                 list[(row+i)*8+(col+i)]=true;
             }
             else if (board_state[row+i][col+i]==EMPTY)
@@ -306,9 +328,6 @@ void Board::capture_pieces(int row,int col,int color)
         {
             if (board_state[row-i][col+i]==1-color)
             {
-                //                QMetaObject::invokeMethod(board_obj, "change_color",
-                //                                          Q_ARG(QVariant,row-i),Q_ARG(QVariant,col+i),Q_ARG(QVariant,color_string));
-                //                board_state[row-i][col+i]=color;
                 list[(row-i)*8+(col+i)]=true;
             }
             else if (board_state[row-i][col+i]==EMPTY)
@@ -321,9 +340,6 @@ void Board::capture_pieces(int row,int col,int color)
         {
             if (board_state[row+i][col-i]==1-color)
             {
-                //                QMetaObject::invokeMethod(board_obj, "change_color",
-                //                                          Q_ARG(QVariant,row+i),Q_ARG(QVariant,col-i),Q_ARG(QVariant,color_string));
-                //                board_state[row+i][col-i]=color;
                 list[(row+i)*8+(col+i)]=true;
             }
             else if (board_state[row+i][col-i]==EMPTY)
@@ -337,13 +353,41 @@ void Board::capture_pieces(int row,int col,int color)
     {
         if(list[j])
         {
-            board_state[j/8][j%8]=color;
+            //board_state[j/8][j%8]=1 - board_state[j/8][j%8];
             QMetaObject::invokeMethod(board_obj, "change_color",
-                                      Q_ARG(QVariant,j/8),Q_ARG(QVariant,j%8),Q_ARG(QVariant,color_string));
-            cout<<j/8<<" "<<j%8;
+                                                  Q_ARG(QVariant,j/8),Q_ARG(QVariant,j%8),Q_ARG(QVariant,color_string));
         }
-
     }
-    cout<<endl;
 }
 
+bool Board::has_game_ended()
+{
+    set_valid_moves(current_color);
+    bool current_color_move=false;
+    for(int i=0;i<64;i++)
+        current_color_move=current_color_move || move_list[i];
+    set_valid_moves(1-current_color);
+    bool opponent_color_move=false;
+    for(int i=0;i<64;i++)
+        opponent_color_move=opponent_color_move || move_list[i];
+    return !current_color_move && !opponent_color_move;
+}
+
+void Board::calculate_score()
+{
+    score_board[BLACK]=0;
+    score_board[WHITE]=0;
+    for(int i=0;i<8;i++)
+    {
+        for(int j=0;j<8;j++)
+        {
+            if(board_state[i][j]==BLACK)
+                score_board[BLACK]++;
+            else if(board_state[i][j]==WHITE)
+                score_board[WHITE]++;
+        }
+    }
+    QMetaObject::invokeMethod(controls_object, "set_score_board",
+                              Q_ARG(QVariant,score_board[BLACK]),Q_ARG(QVariant,score_board[WHITE]));
+
+}
