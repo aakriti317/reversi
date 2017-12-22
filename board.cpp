@@ -8,9 +8,9 @@ Board::Board(QObject *bobj,QObject *cobj)
     controls_object=cobj;
     QObject::connect(board_obj, SIGNAL(piece_added_signal(qint32,qint32)),
                      this, SLOT(piece_added_slot(qint32,qint32)));
-        for(int row=0;row<8;row++)
-            for(int col=0;col<8;col++)
-                board_state[row][col]=EMPTY;
+    for(int row=0;row<8;row++)
+        for(int col=0;col<8;col++)
+            board_state[row][col]=EMPTY;
     occupy_cell(3,3,"WHITE");
     occupy_cell(4,4,"WHITE");
     occupy_cell(3,4,"BLACK");
@@ -181,6 +181,7 @@ void Board::set_valid_moves(int color)
                         break;
                     else if (board_state[row-i][col-i]==color)
                         break;
+                    i++;
                 }
                 flag=0;
                 i=1;
@@ -197,6 +198,7 @@ void Board::set_valid_moves(int color)
                         break;
                     else if (board_state[row+i][col+i]==color)
                         break;
+                    i++;
                 }
                 flag=0;
                 i=1;
@@ -213,6 +215,7 @@ void Board::set_valid_moves(int color)
                         break;
                     else if (board_state[row-i][col+i]==color)
                         break;
+                    i++;
                 }
                 flag=0;
                 i=1;
@@ -229,6 +232,7 @@ void Board::set_valid_moves(int color)
                         break;
                     else if (board_state[row+i][col-i]==color)
                         break;
+                    i++;
                 }
 
             }
@@ -246,117 +250,223 @@ void Board::print_valid_moves()
 void Board::capture_pieces(int row,int col,int color)
 {
     QString color_string;
-    bool list[64]={false};
     if(color==BLACK)
         color_string="BLACK";
     else if(color==WHITE)
         color_string="WHITE";
-
+    vector <int> temp;
     if (board_state[row][col]==color)
     {
+        temp.erase(temp.begin(),temp.end());
         for(int i=row-1;i>=0;i--)
         {
             if (board_state[i][col]==1-color)
             {
-                list[i*8+col]=true;
+                temp.push_back(i*8+col);
             }
             else if (board_state[i][col]==EMPTY)
                 break;
             else if (board_state[i][col]==color)
+            {
+                while(!temp.empty())
+                {
+                    int p=temp.back()/8;
+                    int q=temp.back()%8;
+                    temp.pop_back();
+                    board_state[p][q]=1 - board_state[p][q];
+                    QMetaObject::invokeMethod(board_obj, "change_color",
+                                              Q_ARG(QVariant,p),
+                                              Q_ARG(QVariant,q),
+                                              Q_ARG(QVariant,color_string));
+                }
                 break;
+            }
         }
+        temp.erase(temp.begin(),temp.end());
         for(int i=row+1;i<8;i++)
         {
             if (board_state[i][col]==1-color)
             {
-                list[i*8+col]=true;
+                temp.push_back(i*8+col);
             }
             else if (board_state[i][col]==EMPTY)
                 break;
             else if (board_state[i][col]==color)
+            {
+                while(!temp.empty())
+                {
+                    int p=temp.back()/8;
+                    int q=temp.back()%8;
+                    temp.pop_back();
+                    board_state[p][q]=1 - board_state[p][q];
+                    QMetaObject::invokeMethod(board_obj, "change_color",
+                                              Q_ARG(QVariant,p),
+                                              Q_ARG(QVariant,q),
+                                              Q_ARG(QVariant,color_string));
+                }
                 break;
+            }
 
         }
+        temp.erase(temp.begin(),temp.end());
         for(int i=col-1;i>=0;i--)
         {
             if (board_state[row][i]==1-color)
             {
-                list[row*8+i]=true;
+                temp.push_back(row*8+i);
             }
             else if (board_state[row][i]==EMPTY)
                 break;
             else if (board_state[row][i]==color)
+            {
+                while(!temp.empty())
+                {
+                    int p=temp.back()/8;
+                    int q=temp.back()%8;
+                    temp.pop_back();
+                    board_state[p][q]=1 - board_state[p][q];
+                    QMetaObject::invokeMethod(board_obj, "change_color",
+                                              Q_ARG(QVariant,p),
+                                              Q_ARG(QVariant,q),
+                                              Q_ARG(QVariant,color_string));
+                }
                 break;
+            }
         }
+        temp.erase(temp.begin(),temp.end());
         for(int i=col+1;i<8;i++)
         {
             if (board_state[row][i]==1-color)
             {
-                list[row*8+i]=true;
+                temp.push_back(row*8+i);
             }
             else if (board_state[row][i]==EMPTY)
                 break;
             else if (board_state[row][i]==color)
+            {
+                while(!temp.empty())
+                {
+                    int p=temp.back()/8;
+                    int q=temp.back()%8;
+                    temp.pop_back();
+                    board_state[p][q]=1 - board_state[p][q];
+                    QMetaObject::invokeMethod(board_obj, "change_color",
+                                              Q_ARG(QVariant,p),
+                                              Q_ARG(QVariant,q),
+                                              Q_ARG(QVariant,color_string));
+                }
                 break;
+            }
         }
         int i=1;
+        temp.erase(temp.begin(),temp.end());
         while(row-i>=0 && col-i>=0)
         {
             if (board_state[row-i][col-i]==1-color)
             {
-                list[(row-i)*8+(col-i)]=true;
+                temp.push_back((row-i)*8+(col-i));
             }
             else if (board_state[row-i][col-i]==EMPTY)
                 break;
             else if (board_state[row-i][col-i]==color)
+            {
+                while(!temp.empty())
+                {
+                    int p=temp.back()/8;
+                    int q=temp.back()%8;
+                    temp.pop_back();
+                    board_state[p][q]=1 - board_state[p][q];
+                    QMetaObject::invokeMethod(board_obj, "change_color",
+                                              Q_ARG(QVariant,p),
+                                              Q_ARG(QVariant,q),
+                                              Q_ARG(QVariant,color_string));
+                }
                 break;
+            }
+            i++;
         }
         i=1;
+        temp.erase(temp.begin(),temp.end());
         while(row+i<8 && col+i<8)
         {
             if (board_state[row+i][col+i]==1-color)
             {
-                list[(row+i)*8+(col+i)]=true;
+                temp.push_back((row+i)*8+(col+i));
             }
             else if (board_state[row+i][col+i]==EMPTY)
                 break;
             else if (board_state[row+i][col+i]==color)
+            {
+                while(!temp.empty())
+                {
+                    int p=temp.back()/8;
+                    int q=temp.back()%8;
+                    temp.pop_back();
+                    board_state[p][q]=1 - board_state[p][q];
+                    QMetaObject::invokeMethod(board_obj, "change_color",
+                                              Q_ARG(QVariant,p),
+                                              Q_ARG(QVariant,q),
+                                              Q_ARG(QVariant,color_string));
+                }
                 break;
+            }
+            i++;
         }
         i=1;
+        temp.erase(temp.begin(),temp.end());
         while(row-i>=0 && col+i<8)
         {
             if (board_state[row-i][col+i]==1-color)
             {
-                list[(row-i)*8+(col+i)]=true;
+                temp.push_back((row-i)*8+(col+i));
             }
             else if (board_state[row-i][col+i]==EMPTY)
                 break;
             else if (board_state[row-i][col+i]==color)
+            {
+                while(!temp.empty())
+                {
+                    int p=temp.back()/8;
+                    int q=temp.back()%8;
+                    temp.pop_back();
+                    board_state[p][q]=1 - board_state[p][q];
+                    QMetaObject::invokeMethod(board_obj, "change_color",
+                                              Q_ARG(QVariant,p),
+                                              Q_ARG(QVariant,q),
+                                              Q_ARG(QVariant,color_string));
+                }
                 break;
+            }
+            i++;
         }
         i=1;
+        temp.erase(temp.begin(),temp.end());
         while(row+i<8 && col-i>=0)
         {
             if (board_state[row+i][col-i]==1-color)
             {
-                list[(row+i)*8+(col+i)]=true;
+                temp.push_back((row+i)*8+(col-i));
             }
             else if (board_state[row+i][col-i]==EMPTY)
                 break;
             else if (board_state[row+i][col-i]==color)
+            {
+                while(!temp.empty())
+                {
+                    int p=temp.back()/8;
+                    int q=temp.back()%8;
+                    temp.pop_back();
+                    board_state[p][q]=1 - board_state[p][q];
+                    QMetaObject::invokeMethod(board_obj, "change_color",
+                                              Q_ARG(QVariant,p),
+                                              Q_ARG(QVariant,q),
+                                              Q_ARG(QVariant,color_string));
+                }
                 break;
+            }
+            i++;
         }
 
-    }
-    for(int j=0;j<64;j++)
-    {
-        if(list[j])
-        {
-            //board_state[j/8][j%8]=1 - board_state[j/8][j%8];
-            QMetaObject::invokeMethod(board_obj, "change_color",
-                                                  Q_ARG(QVariant,j/8),Q_ARG(QVariant,j%8),Q_ARG(QVariant,color_string));
-        }
     }
 }
 
