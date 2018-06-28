@@ -4,6 +4,7 @@
 #define WHITE 1
 #define EMPTY 2
 #include <QObject>
+#include <vector>
 
 typedef struct
 {
@@ -19,6 +20,15 @@ typedef struct
     int current_color;
     int opponent_color;
 } State;
+
+struct Tree_Node
+{
+    int best_move[2];
+    int move[2];
+    State *state;
+    std::vector<Tree_Node*> children;
+};
+
 class Board : public QObject
 {
     Q_OBJECT
@@ -42,6 +52,11 @@ public:
     int corner_occupancy(State &state);
     int corner_closeness(State &state);
     int mobility(State &state);
+    Tree_Node *get_empty_node();
+    void create_tree(Tree_Node *root,int current_level,int depth);
+    State *duplicate_state(State &state);
+
+
 private:
     QObject *board_obj;
     QObject *controls_object;

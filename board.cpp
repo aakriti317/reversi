@@ -719,3 +719,49 @@ int Board::mobility(State &state)
      else
          return 0;
 }
+
+Tree_Node *Board::get_empty_node()
+{
+    Tree_Node *tn = (Tree_Node*)malloc(sizeof(Tree_Node));
+    tn->move[0] = -1;
+    tn->move[1] = -1;
+    tn->best_move[0] = -1;
+    tn->best_move[1] = -1;
+    return tn;
+}
+State *Board::duplicate_state(State &state)
+{
+    State *temp = (State*)malloc(sizeof(State));
+    for(int i=0;i<8;i++)
+        for(int j=0;j<8;j++)
+            temp->board_state[i][j] = state.board_state[i][j];
+    temp->current_color = state.current_color;
+    temp->opponent_color = state.opponent_color;
+    return temp;
+}
+
+void Board::create_tree(Tree_Node *root,int current_level,int depth)
+{
+    if(!root || current_level > depth)
+        return;
+    bool move_list[64]={false};
+    set_valid_moves((int)root->state->current_color,*(root->state),move_list);
+    for(int i=0;i<64;i++)
+    {
+        if(move_list[i] == true)
+        {
+            Tree_Node *temp = get_empty_node();
+            temp->move[0] = i/8;
+            temp->move[1] = i%8;
+            temp->state = duplicate_state(*(root->state));
+            temp->state->board_state[i/8][i%8] = temp->state->current_color;
+            capture_pieces(i/8,i%8,*(temp->state));
+            temp->state->current_color = 1 - temp->state->current_color;
+            temp->state->opponent_color = 1 - temp->state->current_color;
+            root->children.push_back(temp);
+            create_tree(temp,1+current_level,depth);
+        }
+    }
+}
+
+
