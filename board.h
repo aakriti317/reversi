@@ -8,8 +8,8 @@
 typedef struct
 {
    int disk_square;
-   int piece_value;
-   int frontier_value;
+   double piece_value;
+   double frontier_value;
 
 } piece_return;
 
@@ -27,12 +27,12 @@ public slots:
 public:
     Board(QObject *bobj,QObject *cobj);
     void occupy_cell(int row,int column,State &state);
-    void print_board();
+    void print_board(State &state);
     void set_valid_moves(int color, State &state, bool *move_list);
     void print_valid_moves(bool *move_list);
     void capture_pieces(int row,int col,State &state);
-    bool has_game_ended();
-    void calculate_score();
+    bool has_game_ended(State &state);
+    void calculate_score(State &state);
     int get_move();
     void minimax();
 

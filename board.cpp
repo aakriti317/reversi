@@ -47,7 +47,7 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
             state.current_color=1-state.current_color;
             state.opponent_color=1-state.current_color;
             chance_flipped=true;
-            calculate_score();
+            calculate_score(state);
         }
     }
     else
@@ -57,7 +57,7 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
         QMetaObject::invokeMethod(controls_object, "status_update",
                                   Q_ARG(QVariant,"No more moves left, passing the turn"));
     }
-    if(has_game_ended())
+    if(has_game_ended(state))
     {
         QString message;
         if(score_board[BLACK]>score_board[WHITE])
@@ -73,9 +73,9 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
     {
         QString message;
         if(state.current_color==WHITE)
-            message="WHITE's turn";
+            message="WHITE's Turn";
         else if(state.current_color==BLACK)
-            message="BLACK's turn";
+            message="BLACK's Turn";
         QMetaObject::invokeMethod(controls_object, "status_update",
                                   Q_ARG(QVariant,message));
     }
@@ -91,10 +91,9 @@ void Board::occupy_cell(int row, int column,State &state)
     QMetaObject::invokeMethod(board_obj, "occupy_cell",
                               Q_ARG(QVariant,row),Q_ARG(QVariant,column),Q_ARG(QVariant,color_string));
     state.board_state[row][column]=state.current_color;
-    print_board();
 }
 
-void Board::print_board()
+void Board::print_board(State &state)
 {
     for(int row=0;row<8;row++)
     {
@@ -268,7 +267,6 @@ void Board::capture_pieces(int row,int col,State &state)
     else if(state.current_color==WHITE)
         color_string="WHITE";
     vector <int> temp;
-    cout<< state.board_state[row][col]<<" "<<state.current_color<<endl;
     if (state.board_state[row][col]==state.current_color)
     {
         temp.erase(temp.begin(),temp.end());
@@ -483,7 +481,7 @@ void Board::capture_pieces(int row,int col,State &state)
     }
 }
 
-bool Board::has_game_ended()
+bool Board::has_game_ended(State &state)
 {
    bool move_list[64]={false};
     set_valid_moves(state.current_color,state,move_list);
@@ -498,7 +496,7 @@ bool Board::has_game_ended()
     return !current_color_move && !opponent_color_move;
 }
 
-void Board::calculate_score()
+void Board::calculate_score(State &state)
 {
     score_board[BLACK]=0;
     score_board[WHITE]=0;
@@ -543,19 +541,20 @@ piece_return Board::piece_count(State &state)
     int neighbour[8][2]=
     {
         {-1,-1},
-        {0,-1},
-        {1,-1},
-        {-1,0},
-        {1,0},
-        {-1,1},
-        {0,1},
-        {1,1}
+        { 0,-1},
+        { 1,-1},
+        {-1, 0},
+        { 1, 0},
+        {-1, 1},
+        { 0, 1},
+        { 1, 1}
     };
     int my_pieces=0,opponent_pieces=0,disk_square=0;
     int myFrontierPieces = 0;
     int opponentFrontierPieces = 0;
-    int Frontier_value=0,piece_value=0;
+    double Frontier_value=0.0,piece_value=0.0;
     for(int i=0;i<8;i++)
+    {
         for(int j=0;j<8;j++)
         {
             if(state.board_state[i][j]==state.current_color)
@@ -566,7 +565,7 @@ piece_return Board::piece_count(State &state)
             else if(state.board_state[i][j]==state.opponent_color)
             {
                 disk_square -= V[i][j];
-                opponent_pieces --;
+                opponent_pieces++;
             }
             if(state.board_state[i][j] != EMPTY)
             {
@@ -576,26 +575,30 @@ piece_return Board::piece_count(State &state)
                     int y = j + neighbour[k][1];
                     if(x>=0 && x<8 && y>=0 && y<8 && state.board_state[x][y] == EMPTY) {
                         if (state.board_state[i][j] == state.current_color)
-                            myFrontierPieces ++;
+                            myFrontierPieces++;
                         else
-                            opponentFrontierPieces ++;
+                            opponentFrontierPieces++;
                     }
                     break;
                 }
             }
         }
+    }
+
     if (myFrontierPieces > opponentFrontierPieces)
-        Frontier_value = (-100 * myFrontierPieces) / (myFrontierPieces + opponentFrontierPieces);
+        Frontier_value = (-100.0 * myFrontierPieces) / (myFrontierPieces + opponentFrontierPieces);
     else if(myFrontierPieces < opponentFrontierPieces)
-        Frontier_value = (100 * opponentFrontierPieces) / (myFrontierPieces + opponentFrontierPieces);
+        Frontier_value = (100.0 * opponentFrontierPieces) / (myFrontierPieces + opponentFrontierPieces);
     else
-        Frontier_value = 0;
+        Frontier_value = 0.0;
+
     if(my_pieces > opponent_pieces)
-        piece_value = (100 * my_pieces) / (my_pieces + opponent_pieces);
+        piece_value = (100.0 * my_pieces) / (my_pieces + opponent_pieces);
     else if(my_pieces < opponent_pieces)
-        piece_value = (-100 * opponent_pieces) / (my_pieces + opponent_pieces);
+        piece_value = (-100.0 * opponent_pieces) / (my_pieces + opponent_pieces);
     else
-        piece_value = 0;
+        piece_value = 0.0;
+
     piece_return pr;
     pr.disk_square = disk_square;
     pr.piece_value = piece_value;
