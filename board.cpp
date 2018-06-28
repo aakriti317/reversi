@@ -31,7 +31,8 @@ Board::Board(QObject *bobj,QObject *cobj)
 
 void Board::piece_added_slot(const qint32 row, const qint32 column)
 {
-    set_valid_moves(state.current_color,state);
+    bool move_list[64]={false};
+    set_valid_moves(state.current_color,state,move_list);
     bool moves_present=false;
     bool chance_flipped=false;
     int clicked_index=row*8+column;
@@ -92,6 +93,7 @@ void Board::occupy_cell(int row, int column,State &state)
     state.board_state[row][column]=state.current_color;
     print_board();
 }
+
 void Board::print_board()
 {
     for(int row=0;row<8;row++)
@@ -104,7 +106,8 @@ void Board::print_board()
     }
     cout<< "*****************************" <<endl;
 }
-void Board::set_valid_moves(int color,State &state)
+
+void Board::set_valid_moves(int color,State &state,bool *move_list)
 {
     for(int i=0;i<64;i++)
         move_list[i]=false;
@@ -248,13 +251,15 @@ void Board::set_valid_moves(int color,State &state)
         }
     }
 }
-void Board::print_valid_moves()
+
+void Board::print_valid_moves(bool *move_list)
 {
     for(int i=0;i<64;i++)
         if(move_list[i])
             cout << i / 8 << " " << i % 8 << endl;
     cout<<"***************"<<endl;
 }
+
 void Board::capture_pieces(int row,int col,State &state)
 {
     QString color_string;
@@ -480,14 +485,16 @@ void Board::capture_pieces(int row,int col,State &state)
 
 bool Board::has_game_ended()
 {
-    set_valid_moves(state.current_color,state);
+   bool move_list[64]={false};
+    set_valid_moves(state.current_color,state,move_list);
     bool current_color_move=false;
     for(int i=0;i<64;i++)
         current_color_move=current_color_move || move_list[i];
-    set_valid_moves(state.opponent_color,state);
+    bool move_list1[64]={false};
+    set_valid_moves(state.opponent_color,state,move_list1);
     bool opponent_color_move=false;
     for(int i=0;i<64;i++)
-        opponent_color_move=opponent_color_move || move_list[i];
+        opponent_color_move=opponent_color_move || move_list1[i];
     return !current_color_move && !opponent_color_move;
 }
 
@@ -510,12 +517,16 @@ void Board::calculate_score()
 
 }
 
-double Board::heuristic(int **board_state)
+double Board::heuristic(State &state)
 {
-
+    piece_return pr = piece_count(state);
+    int corner_occupancy_value = corner_occupancy(state);
+    int corner_closeness_value = corner_closeness(state);
+    int mobility_value = mobility(state);
+    return (10 * pr.disk_square) + (10 * pr.piece_value) + (74.396 * pr.frontier_value) + (801.724 * corner_occupancy_value) + (382.026 * corner_closeness_value) + (78.922 * mobility_value);
 }
 
-piece_return Board::piece_count(int **board_state)
+piece_return Board::piece_count(State &state)
 {
     int V[8][8] =
     {
@@ -540,13 +551,168 @@ piece_return Board::piece_count(int **board_state)
         {0,1},
         {1,1}
     };
-    int my_pices=0,opponent_pieces=0,disk_square=0;
+    int my_pieces=0,opponent_pieces=0,disk_square=0;
+    int myFrontierPieces = 0;
+    int opponentFrontierPieces = 0;
+    int Frontier_value=0,piece_value=0;
     for(int i=0;i<8;i++)
         for(int j=0;j<8;j++)
         {
-
+            if(state.board_state[i][j]==state.current_color)
+            {
+                disk_square += V[i][j];
+                my_pieces++;
+            }
+            else if(state.board_state[i][j]==state.opponent_color)
+            {
+                disk_square -= V[i][j];
+                opponent_pieces --;
+            }
+            if(state.board_state[i][j] != EMPTY)
+            {
+                for(int k=0;k<8;k++)
+                {
+                    int x = i + neighbour[k][0];
+                    int y = j + neighbour[k][1];
+                    if(x>=0 && x<8 && y>=0 && y<8 && state.board_state[x][y] == EMPTY) {
+                        if (state.board_state[i][j] == state.current_color)
+                            myFrontierPieces ++;
+                        else
+                            opponentFrontierPieces ++;
+                    }
+                    break;
+                }
+            }
         }
+    if (myFrontierPieces > opponentFrontierPieces)
+        Frontier_value = (-100 * myFrontierPieces) / (myFrontierPieces + opponentFrontierPieces);
+    else if(myFrontierPieces < opponentFrontierPieces)
+        Frontier_value = (100 * opponentFrontierPieces) / (myFrontierPieces + opponentFrontierPieces);
+    else
+        Frontier_value = 0;
+    if(my_pieces > opponent_pieces)
+        piece_value = (100 * my_pieces) / (my_pieces + opponent_pieces);
+    else if(my_pieces < opponent_pieces)
+        piece_value = (-100 * opponent_pieces) / (my_pieces + opponent_pieces);
+    else
+        piece_value = 0;
+    piece_return pr;
+    pr.disk_square = disk_square;
+    pr.piece_value = piece_value;
+    pr.frontier_value = Frontier_value;
+    return pr;
+}
 
+int Board::corner_occupancy(State &state)
+{
+    int my_pieces=0,opponent_pieces=0;
+    if(state.board_state[0][0] == state.current_color)
+        my_pieces ++;
+    else if(state.board_state[0][0] == state.opponent_color)
+        opponent_pieces ++;
+    if(state.board_state[0][7] == state.current_color)
+        my_pieces ++;
+    else if(state.board_state[0][7] == state.opponent_color)
+        opponent_pieces ++;
+    if(state.board_state[7][0] == state.current_color)
+        my_pieces ++;
+    else if(state.board_state[7][0] == state.opponent_color)
+        opponent_pieces ++;
+    if(state.board_state[7][7] == state.current_color)
+        my_pieces ++;
+    else if(state.board_state[7][7] == state.opponent_color)
+        opponent_pieces ++;
+    return 25 * (my_pieces - opponent_pieces);
+}
 
+int Board::corner_closeness(State &state)
+{
+    int my_pieces=0,opponent_pieces=0;
+    if(state.board_state[0][0] == EMPTY)
+    {
+        if(state.board_state[0][1] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[0][1] == state.opponent_color)
+            opponent_pieces ++;
+        if(state.board_state[1][0] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[1][0] == state.current_color)
+            opponent_pieces ++;
+        if(state.board_state[1][1] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[1][1] == state.opponent_color)
+            opponent_pieces ++;
+    }
+    if(state.board_state[0][7] == EMPTY)
+    {
+        if(state.board_state[0][6] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[0][6] == state.opponent_color)
+            opponent_pieces ++;
+        if(state.board_state[1][7] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[1][7] == state.opponent_color)
+            opponent_pieces ++;
+        if(state.board_state[1][6] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[1][6] == state.opponent_color)
+            opponent_pieces ++;
+    }
+    if(state.board_state [7][0] == EMPTY)
+    {
+        if(state.board_state[1][7] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[1][7] == state.opponent_color)
+            opponent_pieces ++;
+        if(state.board_state[6][0] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[6][0] == state.opponent_color)
+            opponent_pieces ++;
+        if(state.board_state[6][1] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[6][1] == state.opponent_color)
+            opponent_pieces ++;
+    }
+    if(state.board_state[7][7] == EMPTY)
+    {
+        if(state.board_state[6][7] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[6][7] == state.opponent_color)
+            opponent_pieces ++;
+        if(state.board_state[7][6] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[7][6] == state.opponent_color)
+            opponent_pieces ++;
+        if(state.board_state[6][6] == state.current_color)
+            my_pieces ++;
+        else if(state.board_state[6][6] == state.opponent_color)
+            opponent_pieces ++;
+    }
+    return -12.5 * (my_pieces - opponent_pieces);
+}
 
+int Board::mobility(State &state)
+{
+    bool move_list[64]={false};
+    set_valid_moves(state.current_color,state,move_list);
+    int my_moves=0;
+    for(int i=0;i<64;i++)
+    {
+        if(move_list[i]==true)
+            my_moves++;
+    }
+    bool move_list1[64]={false};
+    set_valid_moves(state.opponent_color,state,move_list1);
+    int opponent_moves=0;
+    for(int i=0;i<64;i++)
+    {
+        if(move_list1[i]==true)
+            opponent_moves++;
+    }
+    if(my_moves > opponent_moves)
+        return (100 * my_moves ) / (my_moves + opponent_moves);
+    else if(my_moves < opponent_moves)
+        return (-100 * opponent_moves) / (my_moves + opponent_moves);
+     else
+         return 0;
 }

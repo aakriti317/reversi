@@ -19,7 +19,6 @@ typedef struct
     int current_color;
     int opponent_color;
 } State;
-
 class Board : public QObject
 {
     Q_OBJECT
@@ -29,22 +28,24 @@ public:
     Board(QObject *bobj,QObject *cobj);
     void occupy_cell(int row,int column,State &state);
     void print_board();
-    void set_valid_moves(int color,State &state);
-    void print_valid_moves();
+    void set_valid_moves(int color, State &state, bool *move_list);
+    void print_valid_moves(bool *move_list);
     void capture_pieces(int row,int col,State &state);
-    void set_board_state();
     bool has_game_ended();
     void calculate_score();
     int get_move();
     void minimax();
-    double heuristic(int **board_state);
-    void piece_added(int row,int column,State &state);
-    piece_return piece_count(int **board_state);
+
+    /* Heuristic Funtions */
+    double heuristic(State &state);
+    piece_return piece_count(State &state);
+    int corner_occupancy(State &state);
+    int corner_closeness(State &state);
+    int mobility(State &state);
 private:
     QObject *board_obj;
     QObject *controls_object;
     State state;
-    bool move_list[64]={false};
     int score_board[2]={0};
 
 };
