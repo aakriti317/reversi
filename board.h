@@ -3,6 +3,7 @@
 #define BLACK 0
 #define WHITE 1
 #define EMPTY 2
+#define INF 1e10
 #include <QObject>
 #include <vector>
 
@@ -23,7 +24,7 @@ typedef struct
 
 struct Tree_Node
 {
-    int best_move[2];
+    Tree_Node *best_child;
     int move[2];
     State *state;
     std::vector<Tree_Node*> children;
@@ -55,6 +56,8 @@ public:
     Tree_Node *get_empty_node();
     void create_tree(Tree_Node *root,int current_level,int depth);
     State *duplicate_state(State &state);
+    double mini_max(Tree_Node *root,int depth,int player,int current_color,double alpha,double beta);
+
 
 
 private:

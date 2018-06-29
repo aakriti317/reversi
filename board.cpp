@@ -725,8 +725,7 @@ Tree_Node *Board::get_empty_node()
     Tree_Node *tn = (Tree_Node*)malloc(sizeof(Tree_Node));
     tn->move[0] = -1;
     tn->move[1] = -1;
-    tn->best_move[0] = -1;
-    tn->best_move[1] = -1;
+    tn->best_child = NULL;
     return tn;
 }
 State *Board::duplicate_state(State &state)
@@ -762,6 +761,46 @@ void Board::create_tree(Tree_Node *root,int current_level,int depth)
             create_tree(temp,1+current_level,depth);
         }
     }
+}
+
+double Board::mini_max(Tree_Node *root,int depth,int player,int current_color,double alpha,double beta)
+{
+    if(depth==0 || root->children.size() == 0)
+        return heuristic(*root->state);
+    double current_value;
+    if(current_color == player )
+    {
+        current_value = -1 * INF;
+        for(auto &child : root->children)
+        {
+            if(current_value < beta)
+            {
+                double child_value = mini_max(child,depth-1,player,1-current_color,current_value,beta);
+                if(current_value < child_value)
+                {
+                    current_value = child_value;
+                    root->best_child = child;
+                }
+            }
+        }
+    }
+    else
+    {
+        current_value = INF;
+        for(auto &child : root->children)
+        {
+            if(current_value < alpha)
+            {
+                double child_value = mini_max(child,depth-1,player,1-current_color,alpha,current_value);
+                if(current_value > child_value)
+                {
+                    current_value = child_value;
+                    root->best_child = child;
+                }
+            }
+        }
+    }
+    return current_value;
 }
 
 
