@@ -47,24 +47,24 @@ public slots:
 
 public:
     Board(QObject *bobj,QObject *cobj);
-    void occupy_cell(int row,int column,State &state);
-    void print_board(State &state);
-    void set_valid_moves(int color, State &state, bool *move_list);
+    void occupy_cell(int row, int column, State *state);
+    void print_board(State *state);
+    void set_valid_moves(int color, State *state, bool *move_list);
     void print_valid_moves(bool *move_list);
-    void capture_pieces(int row, int col, State &state, bool reflect_changes);
-    bool has_game_ended(State &state);
-    void calculate_score(State &state);
+    void capture_pieces(int row, int col, State *state, bool reflect_changes);
+    bool has_game_ended(State *state);
+    void calculate_score(State *state);
 
 
     /* AI Funtions */
-    double heuristic(State &state);
-    piece_return piece_count(State &state);
-    int corner_occupancy(State &state);
-    int corner_closeness(State &state);
-    int mobility(State &state);
+    double heuristic(State *state);
+    piece_return piece_count(State *state);
+    int corner_occupancy(State *state);
+    int corner_closeness(State *state);
+    int mobility(State *state);
     Tree_Node *get_empty_node();
     void create_tree(Tree_Node *root,int current_level,int depth);
-    State *duplicate_state(State &state);
+    State *duplicate_state(State *state);
     double mini_max(Tree_Node *root,int depth,int player,int current_color,double alpha,double beta);
     int get_move(Tree_Node *root,int depth,int player,int current_color);
 
@@ -73,6 +73,7 @@ private:
     QObject *controls_object;
     State state;
     int score_board[2]={0};
+    bool game_ended = false;
     Player player1;
     Player player2;
     int depth = 2;

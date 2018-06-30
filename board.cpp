@@ -33,11 +33,11 @@ Board::Board(QObject *bobj,QObject *cobj)
                               Q_ARG(QVariant,"BLACK's Turn"));
     if(player1.type == COMPUTER)
     {
-        Tree_Node *root = get_empty_node();
-        root->state = duplicate_state(state);
-        create_tree(root,0,0);
-        int move = get_move(root,depth,player1.color,player1.color);
-        cout << move / 8 << ":" << move % 8 << endl;
+//        Tree_Node *root = get_empty_node();
+//        root->state = duplicate_state(&state);
+//        create_tree(root,0,0);
+//        int move = get_move(root,depth,player1.color,player1.color);
+//        cout << move / 8 << ":" << move % 8 << endl;
 //        piece_added_slot(move / 8, move % 8);
     }
 
@@ -46,7 +46,7 @@ Board::Board(QObject *bobj,QObject *cobj)
 void Board::piece_added_slot(const qint32 row, const qint32 column)
 {
     bool move_list[64]={false};
-    set_valid_moves(state.current_color,state,move_list);
+    set_valid_moves(state.current_color,&state,move_list);
     bool moves_present=false;
     bool chance_flipped=false;
     int clicked_index=row*8+column;
@@ -56,12 +56,12 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
     {
         if(move_list[clicked_index])
         {
-            occupy_cell(row,column,state);
-            capture_pieces(row,column,state,true);
+            occupy_cell(row,column,&state);
+            capture_pieces(row,column,&state,true);
             state.current_color=1-state.current_color;
             state.opponent_color=1-state.current_color;
             chance_flipped=true;
-            calculate_score(state);
+            calculate_score(&state);
         }
     }
     else
@@ -71,8 +71,9 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
         QMetaObject::invokeMethod(controls_object, "status_update",
                                   Q_ARG(QVariant,"No more moves left, passing the turn"));
     }
-    if(has_game_ended(state))
+    if(has_game_ended(&state))
     {
+        game_ended = true;
         QString message;
         if(score_board[BLACK]>score_board[WHITE])
             message="Game Ended! Black Wins.";
@@ -83,7 +84,7 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
         QMetaObject::invokeMethod(controls_object, "status_update",
                                   Q_ARG(QVariant,message));
     }
-    if(chance_flipped)
+    if(chance_flipped && !game_ended)
     {
         QString message;
         if(state.current_color==WHITE)
@@ -95,32 +96,32 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
     }
 }
 
-void Board::occupy_cell(int row, int column,State &state)
+void Board::occupy_cell(int row, int column,State *state)
 {
     QString color_string;
-    if(state.current_color==BLACK)
+    if(state->current_color==BLACK)
         color_string="BLACK";
-    else if(state.current_color==WHITE)
+    else if(state->current_color==WHITE)
         color_string="WHITE";
     QMetaObject::invokeMethod(board_obj, "occupy_cell",
                               Q_ARG(QVariant,row),Q_ARG(QVariant,column),Q_ARG(QVariant,color_string));
-    state.board_state[row][column]=state.current_color;
+    state->board_state[row][column]=state->current_color;
 }
 
-void Board::print_board(State &state)
+void Board::print_board(State *state)
 {
     for(int row=0;row<8;row++)
     {
         for(int col=0;col<8;col++)
         {
-            cout<< state.board_state[row][col]<<" ";
+            cout<< state->board_state[row][col]<<" ";
         }
         cout<<endl;
     }
     cout<< "*****************************" <<endl;
 }
 
-void Board::set_valid_moves(int color,State &state,bool *move_list)
+void Board::set_valid_moves(int color, State *state, bool *move_list)
 {
     for(int i=0;i<64;i++)
         move_list[i]=false;
@@ -128,83 +129,83 @@ void Board::set_valid_moves(int color,State &state,bool *move_list)
     {
         for(int col=0;col<8;col++)
         {
-            if (state.board_state[row][col]==color)
+            if (state->board_state[row][col]==color)
             {
                 int flag = 0;
                 for(int i=row-1;i>=0;i--)
                 {
-                    if (state.board_state[i][col]==1-color)
+                    if (state->board_state[i][col]==1-color)
                         flag=1;
-                    else if (state.board_state[i][col]==EMPTY && flag==1)
+                    else if (state->board_state[i][col]==EMPTY && flag==1)
                     {
                         move_list[i*8+col]=true;
                         break;
                     }
-                    else if (state.board_state[i][col]==EMPTY && flag==0)
+                    else if (state->board_state[i][col]==EMPTY && flag==0)
                         break;
-                    else if (state.board_state[i][col]==color)
+                    else if (state->board_state[i][col]==color)
                         break;
                 }
                 flag=0;
                 for(int i=row+1;i<8;i++)
                 {
-                    if (state.board_state[i][col]==1-color)
+                    if (state->board_state[i][col]==1-color)
                         flag=1;
-                    else if (state.board_state[i][col]==EMPTY && flag==1)
+                    else if (state->board_state[i][col]==EMPTY && flag==1)
                     {
                         move_list[i*8+col]=true;
                         break;
                     }
-                    else if (state.board_state[i][col]==EMPTY && flag==0)
+                    else if (state->board_state[i][col]==EMPTY && flag==0)
                         break;
-                    else if (state.board_state[i][col]==color)
+                    else if (state->board_state[i][col]==color)
                         break;
 
                 }
                 flag=0;
                 for(int i=col-1;i>=0;i--)
                 {
-                    if (state.board_state[row][i]==1-color)
+                    if (state->board_state[row][i]==1-color)
                         flag=1;
-                    else if (state.board_state[row][i]==EMPTY && flag==1)
+                    else if (state->board_state[row][i]==EMPTY && flag==1)
                     {
                         move_list[row*8+i]=true;
                         break;
                     }
-                    else if (state.board_state[row][i]==EMPTY && flag==0)
+                    else if (state->board_state[row][i]==EMPTY && flag==0)
                         break;
-                    else if (state.board_state[row][i]==color)
+                    else if (state->board_state[row][i]==color)
                         break;
                 }
                 flag=0;
                 for(int i=col+1;i<8;i++)
                 {
-                    if (state.board_state[row][i]==1-color)
+                    if (state->board_state[row][i]==1-color)
                         flag=1;
-                    else if (state.board_state[row][i]==EMPTY && flag==1)
+                    else if (state->board_state[row][i]==EMPTY && flag==1)
                     {
                         move_list[row*8+i]=true;
                         break;
                     }
-                    else if (state.board_state[row][i]==EMPTY && flag==0)
+                    else if (state->board_state[row][i]==EMPTY && flag==0)
                         break;
-                    else if (state.board_state[row][i]==color)
+                    else if (state->board_state[row][i]==color)
                         break;
                 }
                 flag=0;
                 int i=1;
                 while(row-i>=0 && col-i>=0)
                 {
-                    if (state.board_state[row-i][col-i]==1-color)
+                    if (state->board_state[row-i][col-i]==1-color)
                         flag=1;
-                    else if (state.board_state[row-i][col-i]==EMPTY && flag==1)
+                    else if (state->board_state[row-i][col-i]==EMPTY && flag==1)
                     {
                         move_list[(row-i)*8+(col-i)]=true;
                         break;
                     }
-                    else if (state.board_state[row-i][col-i]==EMPTY && flag==0)
+                    else if (state->board_state[row-i][col-i]==EMPTY && flag==0)
                         break;
-                    else if (state.board_state[row-i][col-i]==color)
+                    else if (state->board_state[row-i][col-i]==color)
                         break;
                     i++;
                 }
@@ -212,16 +213,16 @@ void Board::set_valid_moves(int color,State &state,bool *move_list)
                 i=1;
                 while(row+i<8 && col+i<8)
                 {
-                    if (state.board_state[row+i][col+i]==1-color)
+                    if (state->board_state[row+i][col+i]==1-color)
                         flag=1;
-                    else if (state.board_state[row+i][col+i]==EMPTY && flag==1)
+                    else if (state->board_state[row+i][col+i]==EMPTY && flag==1)
                     {
                         move_list[(row+i)*8+(col+i)]=true;
                         break;
                     }
-                    else if (state.board_state[row+i][col+i]==EMPTY && flag==0)
+                    else if (state->board_state[row+i][col+i]==EMPTY && flag==0)
                         break;
-                    else if (state.board_state[row+i][col+i]==color)
+                    else if (state->board_state[row+i][col+i]==color)
                         break;
                     i++;
                 }
@@ -229,16 +230,16 @@ void Board::set_valid_moves(int color,State &state,bool *move_list)
                 i=1;
                 while(row-i>=0 && col+i<8)
                 {
-                    if (state.board_state[row-i][col+i]==1-color)
+                    if (state->board_state[row-i][col+i]==1-color)
                         flag=1;
-                    else if (state.board_state[row-i][col+i]==EMPTY && flag==1)
+                    else if (state->board_state[row-i][col+i]==EMPTY && flag==1)
                     {
                         move_list[(row-i)*8+(col+i)]=true;
                         break;
                     }
-                    else if (state.board_state[row-i][col+i]==EMPTY && flag==0)
+                    else if (state->board_state[row-i][col+i]==EMPTY && flag==0)
                         break;
-                    else if (state.board_state[row-i][col+i]==color)
+                    else if (state->board_state[row-i][col+i]==color)
                         break;
                     i++;
                 }
@@ -246,16 +247,16 @@ void Board::set_valid_moves(int color,State &state,bool *move_list)
                 i=1;
                 while(row+i<8 && col-i>=0)
                 {
-                    if (state.board_state[row+i][col-i]==1-color)
+                    if (state->board_state[row+i][col-i]==1-color)
                         flag=1;
-                    else if (state.board_state[row+i][col-i]==EMPTY && flag==1)
+                    else if (state->board_state[row+i][col-i]==EMPTY && flag==1)
                     {
                         move_list[(row+i)*8+(col-i)]=true;
                         break;
                     }
-                    else if (state.board_state[row+i][col-i]==EMPTY && flag==0)
+                    else if (state->board_state[row+i][col-i]==EMPTY && flag==0)
                         break;
-                    else if (state.board_state[row+i][col-i]==color)
+                    else if (state->board_state[row+i][col-i]==color)
                         break;
                     i++;
                 }
@@ -273,33 +274,33 @@ void Board::print_valid_moves(bool *move_list)
     cout<<"***************"<<endl;
 }
 
-void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
+void Board::capture_pieces(int row,int col,State *state, bool reflect_changes)
 {
     QString color_string;
-    if(state.current_color==BLACK)
+    if(state->current_color==BLACK)
         color_string="BLACK";
-    else if(state.current_color==WHITE)
+    else if(state->current_color==WHITE)
         color_string="WHITE";
     vector <int> temp;
-    if (state.board_state[row][col]==state.current_color)
+    if (state->board_state[row][col]==state->current_color)
     {
         temp.erase(temp.begin(),temp.end());
         for(int i=row-1;i>=0;i--)
         {
-            if (state.board_state[i][col]==state.opponent_color)
+            if (state->board_state[i][col]==state->opponent_color)
             {
                 temp.push_back(i*8+col);
             }
-            else if (state.board_state[i][col]==EMPTY)
+            else if (state->board_state[i][col]==EMPTY)
                 break;
-            else if (state.board_state[i][col]==state.current_color)
+            else if (state->board_state[i][col]==state->current_color)
             {
                 while(!temp.empty())
                 {
                     int p=temp.back()/8;
                     int q=temp.back()%8;
                     temp.pop_back();
-                    state.board_state[p][q]=1 - state.board_state[p][q];
+                    state->board_state[p][q]=1 - state->board_state[p][q];
                     if(reflect_changes)
                         QMetaObject::invokeMethod(board_obj, "change_color",
                                                   Q_ARG(QVariant,p),
@@ -312,20 +313,20 @@ void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
         temp.erase(temp.begin(),temp.end());
         for(int i=row+1;i<8;i++)
         {
-            if (state.board_state[i][col]==state.opponent_color)
+            if (state->board_state[i][col]==state->opponent_color)
             {
                 temp.push_back(i*8+col);
             }
-            else if (state.board_state[i][col]==EMPTY)
+            else if (state->board_state[i][col]==EMPTY)
                 break;
-            else if (state.board_state[i][col]==state.current_color)
+            else if (state->board_state[i][col]==state->current_color)
             {
                 while(!temp.empty())
                 {
                     int p=temp.back()/8;
                     int q=temp.back()%8;
                     temp.pop_back();
-                    state.board_state[p][q]=1 - state.board_state[p][q];
+                    state->board_state[p][q]=1 - state->board_state[p][q];
                     if(reflect_changes)
                         QMetaObject::invokeMethod(board_obj, "change_color",
                                                   Q_ARG(QVariant,p),
@@ -339,20 +340,20 @@ void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
         temp.erase(temp.begin(),temp.end());
         for(int i=col-1;i>=0;i--)
         {
-            if (state.board_state[row][i]==state.opponent_color)
+            if (state->board_state[row][i]==state->opponent_color)
             {
                 temp.push_back(row*8+i);
             }
-            else if (state.board_state[row][i]==EMPTY)
+            else if (state->board_state[row][i]==EMPTY)
                 break;
-            else if (state.board_state[row][i]==state.current_color)
+            else if (state->board_state[row][i]==state->current_color)
             {
                 while(!temp.empty())
                 {
                     int p=temp.back()/8;
                     int q=temp.back()%8;
                     temp.pop_back();
-                    state.board_state[p][q]=1 - state.board_state[p][q];
+                    state->board_state[p][q]=1 - state->board_state[p][q];
                     if(reflect_changes)
                         QMetaObject::invokeMethod(board_obj, "change_color",
                                                   Q_ARG(QVariant,p),
@@ -365,20 +366,20 @@ void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
         temp.erase(temp.begin(),temp.end());
         for(int i=col+1;i<8;i++)
         {
-            if (state.board_state[row][i]==state.opponent_color)
+            if (state->board_state[row][i]==state->opponent_color)
             {
                 temp.push_back(row*8+i);
             }
-            else if (state.board_state[row][i]==EMPTY)
+            else if (state->board_state[row][i]==EMPTY)
                 break;
-            else if (state.board_state[row][i]==state.current_color)
+            else if (state->board_state[row][i]==state->current_color)
             {
                 while(!temp.empty())
                 {
                     int p=temp.back()/8;
                     int q=temp.back()%8;
                     temp.pop_back();
-                    state.board_state[p][q]=1 - state.board_state[p][q];
+                    state->board_state[p][q]=1 - state->board_state[p][q];
                     if(reflect_changes)
                         QMetaObject::invokeMethod(board_obj, "change_color",
                                                   Q_ARG(QVariant,p),
@@ -392,20 +393,20 @@ void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
         temp.erase(temp.begin(),temp.end());
         while(row-i>=0 && col-i>=0)
         {
-            if (state.board_state[row-i][col-i]==state.opponent_color)
+            if (state->board_state[row-i][col-i]==state->opponent_color)
             {
                 temp.push_back((row-i)*8+(col-i));
             }
-            else if (state.board_state[row-i][col-i]==EMPTY)
+            else if (state->board_state[row-i][col-i]==EMPTY)
                 break;
-            else if (state.board_state[row-i][col-i]==state.current_color)
+            else if (state->board_state[row-i][col-i]==state->current_color)
             {
                 while(!temp.empty())
                 {
                     int p=temp.back()/8;
                     int q=temp.back()%8;
                     temp.pop_back();
-                    state.board_state[p][q]=1 - state.board_state[p][q];
+                    state->board_state[p][q]=1 - state->board_state[p][q];
                     if(reflect_changes)
                         QMetaObject::invokeMethod(board_obj, "change_color",
                                                   Q_ARG(QVariant,p),
@@ -420,20 +421,20 @@ void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
         temp.erase(temp.begin(),temp.end());
         while(row+i<8 && col+i<8)
         {
-            if (state.board_state[row+i][col+i]==state.opponent_color)
+            if (state->board_state[row+i][col+i]==state->opponent_color)
             {
                 temp.push_back((row+i)*8+(col+i));
             }
-            else if (state.board_state[row+i][col+i]==EMPTY)
+            else if (state->board_state[row+i][col+i]==EMPTY)
                 break;
-            else if (state.board_state[row+i][col+i]==state.current_color)
+            else if (state->board_state[row+i][col+i]==state->current_color)
             {
                 while(!temp.empty())
                 {
                     int p=temp.back()/8;
                     int q=temp.back()%8;
                     temp.pop_back();
-                    state.board_state[p][q]=1 - state.board_state[p][q];
+                    state->board_state[p][q]=1 - state->board_state[p][q];
                     if(reflect_changes)
                         QMetaObject::invokeMethod(board_obj, "change_color",
                                                   Q_ARG(QVariant,p),
@@ -448,20 +449,20 @@ void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
         temp.erase(temp.begin(),temp.end());
         while(row-i>=0 && col+i<8)
         {
-            if (state.board_state[row-i][col+i]==state.opponent_color)
+            if (state->board_state[row-i][col+i]==state->opponent_color)
             {
                 temp.push_back((row-i)*8+(col+i));
             }
-            else if (state.board_state[row-i][col+i]==EMPTY)
+            else if (state->board_state[row-i][col+i]==EMPTY)
                 break;
-            else if (state.board_state[row-i][col+i]==state.current_color)
+            else if (state->board_state[row-i][col+i]==state->current_color)
             {
                 while(!temp.empty())
                 {
                     int p=temp.back()/8;
                     int q=temp.back()%8;
                     temp.pop_back();
-                    state.board_state[p][q]=1 - state.board_state[p][q];
+                    state->board_state[p][q]=1 - state->board_state[p][q];
                     if(reflect_changes)
                         QMetaObject::invokeMethod(board_obj, "change_color",
                                                   Q_ARG(QVariant,p),
@@ -476,20 +477,20 @@ void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
         temp.erase(temp.begin(),temp.end());
         while(row+i<8 && col-i>=0)
         {
-            if (state.board_state[row+i][col-i]==state.opponent_color)
+            if (state->board_state[row+i][col-i]==state->opponent_color)
             {
                 temp.push_back((row+i)*8+(col-i));
             }
-            else if (state.board_state[row+i][col-i]==EMPTY)
+            else if (state->board_state[row+i][col-i]==EMPTY)
                 break;
-            else if (state.board_state[row+i][col-i]==state.current_color)
+            else if (state->board_state[row+i][col-i]==state->current_color)
             {
                 while(!temp.empty())
                 {
                     int p=temp.back()/8;
                     int q=temp.back()%8;
                     temp.pop_back();
-                    state.board_state[p][q]=1 - state.board_state[p][q];
+                    state->board_state[p][q]=1 - state->board_state[p][q];
                     if(reflect_changes)
                         QMetaObject::invokeMethod(board_obj, "change_color",
                                                   Q_ARG(QVariant,p),
@@ -503,22 +504,22 @@ void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
     }
 }
 
-bool Board::has_game_ended(State &state)
+bool Board::has_game_ended(State *state)
 {
     bool move_list[64]={false};
-    set_valid_moves(state.current_color,state,move_list);
+    set_valid_moves(state->current_color,state,move_list);
     bool current_color_move=false;
     for(int i=0;i<64;i++)
         current_color_move=current_color_move || move_list[i];
     bool move_list1[64]={false};
-    set_valid_moves(state.opponent_color,state,move_list1);
+    set_valid_moves(state->opponent_color,state,move_list1);
     bool opponent_color_move=false;
     for(int i=0;i<64;i++)
         opponent_color_move=opponent_color_move || move_list1[i];
     return !current_color_move && !opponent_color_move;
 }
 
-void Board::calculate_score(State &state)
+void Board::calculate_score(State *state)
 {
     score_board[BLACK]=0;
     score_board[WHITE]=0;
@@ -526,9 +527,9 @@ void Board::calculate_score(State &state)
     {
         for(int j=0;j<8;j++)
         {
-            if(state.board_state[i][j]==BLACK)
+            if(state->board_state[i][j]==BLACK)
                 score_board[BLACK]++;
-            else if(state.board_state[i][j]==WHITE)
+            else if(state->board_state[i][j]==WHITE)
                 score_board[WHITE]++;
         }
     }
@@ -537,7 +538,7 @@ void Board::calculate_score(State &state)
 
 }
 
-double Board::heuristic(State &state)
+double Board::heuristic(State *state)
 {
     piece_return pr = piece_count(state);
     int corner_occupancy_value = corner_occupancy(state);
@@ -546,7 +547,7 @@ double Board::heuristic(State &state)
     return (10 * pr.disk_square) + (10 * pr.piece_value) + (74.396 * pr.frontier_value) + (801.724 * corner_occupancy_value) + (382.026 * corner_closeness_value) + (78.922 * mobility_value);
 }
 
-piece_return Board::piece_count(State &state)
+piece_return Board::piece_count(State *state)
 {
     int V[8][8] =
     {
@@ -579,24 +580,24 @@ piece_return Board::piece_count(State &state)
     {
         for(int j=0;j<8;j++)
         {
-            if(state.board_state[i][j]==state.current_color)
+            if(state->board_state[i][j]==state->current_color)
             {
                 disk_square += V[i][j];
                 my_pieces++;
             }
-            else if(state.board_state[i][j]==state.opponent_color)
+            else if(state->board_state[i][j]==state->opponent_color)
             {
                 disk_square -= V[i][j];
                 opponent_pieces++;
             }
-            if(state.board_state[i][j] != EMPTY)
+            if(state->board_state[i][j] != EMPTY)
             {
                 for(int k=0;k<8;k++)
                 {
                     int x = i + neighbour[k][0];
                     int y = j + neighbour[k][1];
-                    if(x>=0 && x<8 && y>=0 && y<8 && state.board_state[x][y] == EMPTY) {
-                        if (state.board_state[i][j] == state.current_color)
+                    if(x>=0 && x<8 && y>=0 && y<8 && state->board_state[x][y] == EMPTY) {
+                        if (state->board_state[i][j] == state->current_color)
                             myFrontierPieces++;
                         else
                             opponentFrontierPieces++;
@@ -628,98 +629,98 @@ piece_return Board::piece_count(State &state)
     return pr;
 }
 
-int Board::corner_occupancy(State &state)
+int Board::corner_occupancy(State *state)
 {
     int my_pieces=0,opponent_pieces=0;
-    if(state.board_state[0][0] == state.current_color)
+    if(state->board_state[0][0] == state->current_color)
         my_pieces ++;
-    else if(state.board_state[0][0] == state.opponent_color)
+    else if(state->board_state[0][0] == state->opponent_color)
         opponent_pieces ++;
-    if(state.board_state[0][7] == state.current_color)
+    if(state->board_state[0][7] == state->current_color)
         my_pieces ++;
-    else if(state.board_state[0][7] == state.opponent_color)
+    else if(state->board_state[0][7] == state->opponent_color)
         opponent_pieces ++;
-    if(state.board_state[7][0] == state.current_color)
+    if(state->board_state[7][0] == state->current_color)
         my_pieces ++;
-    else if(state.board_state[7][0] == state.opponent_color)
+    else if(state->board_state[7][0] == state->opponent_color)
         opponent_pieces ++;
-    if(state.board_state[7][7] == state.current_color)
+    if(state->board_state[7][7] == state->current_color)
         my_pieces ++;
-    else if(state.board_state[7][7] == state.opponent_color)
+    else if(state->board_state[7][7] == state->opponent_color)
         opponent_pieces ++;
     return 25 * (my_pieces - opponent_pieces);
 }
 
-int Board::corner_closeness(State &state)
+int Board::corner_closeness(State *state)
 {
     int my_pieces=0,opponent_pieces=0;
-    if(state.board_state[0][0] == EMPTY)
+    if(state->board_state[0][0] == EMPTY)
     {
-        if(state.board_state[0][1] == state.current_color)
+        if(state->board_state[0][1] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[0][1] == state.opponent_color)
+        else if(state->board_state[0][1] == state->opponent_color)
             opponent_pieces ++;
-        if(state.board_state[1][0] == state.current_color)
+        if(state->board_state[1][0] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[1][0] == state.current_color)
+        else if(state->board_state[1][0] == state->current_color)
             opponent_pieces ++;
-        if(state.board_state[1][1] == state.current_color)
+        if(state->board_state[1][1] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[1][1] == state.opponent_color)
+        else if(state->board_state[1][1] == state->opponent_color)
             opponent_pieces ++;
     }
-    if(state.board_state[0][7] == EMPTY)
+    if(state->board_state[0][7] == EMPTY)
     {
-        if(state.board_state[0][6] == state.current_color)
+        if(state->board_state[0][6] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[0][6] == state.opponent_color)
+        else if(state->board_state[0][6] == state->opponent_color)
             opponent_pieces ++;
-        if(state.board_state[1][7] == state.current_color)
+        if(state->board_state[1][7] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[1][7] == state.opponent_color)
+        else if(state->board_state[1][7] == state->opponent_color)
             opponent_pieces ++;
-        if(state.board_state[1][6] == state.current_color)
+        if(state->board_state[1][6] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[1][6] == state.opponent_color)
+        else if(state->board_state[1][6] == state->opponent_color)
             opponent_pieces ++;
     }
-    if(state.board_state [7][0] == EMPTY)
+    if(state->board_state [7][0] == EMPTY)
     {
-        if(state.board_state[1][7] == state.current_color)
+        if(state->board_state[1][7] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[1][7] == state.opponent_color)
+        else if(state->board_state[1][7] == state->opponent_color)
             opponent_pieces ++;
-        if(state.board_state[6][0] == state.current_color)
+        if(state->board_state[6][0] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[6][0] == state.opponent_color)
+        else if(state->board_state[6][0] == state->opponent_color)
             opponent_pieces ++;
-        if(state.board_state[6][1] == state.current_color)
+        if(state->board_state[6][1] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[6][1] == state.opponent_color)
+        else if(state->board_state[6][1] == state->opponent_color)
             opponent_pieces ++;
     }
-    if(state.board_state[7][7] == EMPTY)
+    if(state->board_state[7][7] == EMPTY)
     {
-        if(state.board_state[6][7] == state.current_color)
+        if(state->board_state[6][7] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[6][7] == state.opponent_color)
+        else if(state->board_state[6][7] == state->opponent_color)
             opponent_pieces ++;
-        if(state.board_state[7][6] == state.current_color)
+        if(state->board_state[7][6] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[7][6] == state.opponent_color)
+        else if(state->board_state[7][6] == state->opponent_color)
             opponent_pieces ++;
-        if(state.board_state[6][6] == state.current_color)
+        if(state->board_state[6][6] == state->current_color)
             my_pieces ++;
-        else if(state.board_state[6][6] == state.opponent_color)
+        else if(state->board_state[6][6] == state->opponent_color)
             opponent_pieces ++;
     }
     return -12.5 * (my_pieces - opponent_pieces);
 }
 
-int Board::mobility(State &state)
+int Board::mobility(State *state)
 {
     bool move_list[64]={false};
-    set_valid_moves(state.current_color,state,move_list);
+    set_valid_moves(state->current_color,state,move_list);
     int my_moves=0;
     for(int i=0;i<64;i++)
     {
@@ -727,7 +728,7 @@ int Board::mobility(State &state)
             my_moves++;
     }
     bool move_list1[64]={false};
-    set_valid_moves(state.opponent_color,state,move_list1);
+    set_valid_moves(state->opponent_color,state,move_list1);
     int opponent_moves=0;
     for(int i=0;i<64;i++)
     {
@@ -751,14 +752,14 @@ Tree_Node *Board::get_empty_node()
     return tn;
 }
 
-State *Board::duplicate_state(State &state)
+State *Board::duplicate_state(State *state)
 {
     State *temp = (State*)malloc(sizeof(State));
     for(int i=0;i<8;i++)
         for(int j=0;j<8;j++)
-            temp->board_state[i][j] = state.board_state[i][j];
-    temp->current_color = state.current_color;
-    temp->opponent_color = state.opponent_color;
+            temp->board_state[i][j] = state->board_state[i][j];
+    temp->current_color = state->current_color;
+    temp->opponent_color = state->opponent_color;
     return temp;
 }
 
@@ -767,7 +768,7 @@ void Board::create_tree(Tree_Node *root,int current_level,int depth)
     if(!root || current_level > depth)
         return;
     bool move_list[64]={false};
-    set_valid_moves((int)root->state->current_color,*(root->state),move_list);
+    set_valid_moves((int)root->state->current_color,(root->state),move_list);
     for(int i=0;i<64;i++)
     {
         if(move_list[i] == true)
@@ -775,11 +776,11 @@ void Board::create_tree(Tree_Node *root,int current_level,int depth)
             Tree_Node *temp = get_empty_node();
             temp->move[0] = i/8;
             temp->move[1] = i%8;
-            temp->state = duplicate_state(*(root->state));
+            temp->state = duplicate_state((root->state));
             temp->state->board_state[i/8][i%8] = temp->state->current_color;
+            capture_pieces(i/8,i%8,(temp->state),false);
             cout << current_level << " : " << i / 8 << " : " << i % 8 << endl;
-            capture_pieces(i/8,i%8,*(temp->state),false);
-            print_board(*temp->state);
+//            print_board(*temp->state);
             temp->state->current_color = 1 - temp->state->current_color;
             temp->state->opponent_color = 1 - temp->state->current_color;
             root->children.push_back(temp);
@@ -791,7 +792,7 @@ void Board::create_tree(Tree_Node *root,int current_level,int depth)
 double Board::mini_max(Tree_Node *root,int depth,int player,int current_color,double alpha,double beta)
 {
     if(depth==0 || root->children.size() == 0)
-        return heuristic(*root->state);
+        return heuristic(root->state);
     double current_value;
     if(current_color == player )
     {
