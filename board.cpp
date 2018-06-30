@@ -11,8 +11,12 @@ Board::Board(QObject *bobj,QObject *cobj)
     for(int row=0;row<8;row++)
         for(int col=0;col<8;col++)
             state.board_state[row][col]=EMPTY;
-    state.current_color=BLACK;
-    state.opponent_color=WHITE;
+    player1.type = COMPUTER;
+    player2.type = COMPUTER;
+    player1.color = BLACK;
+    player2.color = WHITE;
+    state.current_color=player1.color;
+    state.opponent_color=player2.color;
     state.board_state[3][3]=WHITE;
     QMetaObject::invokeMethod(board_obj, "occupy_cell",
                               Q_ARG(QVariant,3),Q_ARG(QVariant,3),Q_ARG(QVariant,"WHITE"));
@@ -27,6 +31,16 @@ Board::Board(QObject *bobj,QObject *cobj)
                               Q_ARG(QVariant,4),Q_ARG(QVariant,3),Q_ARG(QVariant,"BLACK"));
     QMetaObject::invokeMethod(controls_object, "status_update",
                               Q_ARG(QVariant,"BLACK's Turn"));
+    if(player1.type == COMPUTER)
+    {
+        Tree_Node *root = get_empty_node();
+        root->state = duplicate_state(state);
+        create_tree(root,0,0);
+        int move = get_move(root,depth,player1.color,player1.color);
+        cout << move / 8 << ":" << move % 8 << endl;
+//        piece_added_slot(move / 8, move % 8);
+    }
+
 }
 
 void Board::piece_added_slot(const qint32 row, const qint32 column)
@@ -43,7 +57,7 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
         if(move_list[clicked_index])
         {
             occupy_cell(row,column,state);
-            capture_pieces(row,column,state);
+            capture_pieces(row,column,state,true);
             state.current_color=1-state.current_color;
             state.opponent_color=1-state.current_color;
             chance_flipped=true;
@@ -259,7 +273,7 @@ void Board::print_valid_moves(bool *move_list)
     cout<<"***************"<<endl;
 }
 
-void Board::capture_pieces(int row,int col,State &state)
+void Board::capture_pieces(int row,int col,State &state, bool reflect_changes)
 {
     QString color_string;
     if(state.current_color==BLACK)
@@ -286,10 +300,11 @@ void Board::capture_pieces(int row,int col,State &state)
                     int q=temp.back()%8;
                     temp.pop_back();
                     state.board_state[p][q]=1 - state.board_state[p][q];
-                    QMetaObject::invokeMethod(board_obj, "change_color",
-                                              Q_ARG(QVariant,p),
-                                              Q_ARG(QVariant,q),
-                                              Q_ARG(QVariant,color_string));
+                    if(reflect_changes)
+                        QMetaObject::invokeMethod(board_obj, "change_color",
+                                                  Q_ARG(QVariant,p),
+                                                  Q_ARG(QVariant,q),
+                                                  Q_ARG(QVariant,color_string));
                 }
                 break;
             }
@@ -311,10 +326,11 @@ void Board::capture_pieces(int row,int col,State &state)
                     int q=temp.back()%8;
                     temp.pop_back();
                     state.board_state[p][q]=1 - state.board_state[p][q];
-                    QMetaObject::invokeMethod(board_obj, "change_color",
-                                              Q_ARG(QVariant,p),
-                                              Q_ARG(QVariant,q),
-                                              Q_ARG(QVariant,color_string));
+                    if(reflect_changes)
+                        QMetaObject::invokeMethod(board_obj, "change_color",
+                                                  Q_ARG(QVariant,p),
+                                                  Q_ARG(QVariant,q),
+                                                  Q_ARG(QVariant,color_string));
                 }
                 break;
             }
@@ -337,10 +353,11 @@ void Board::capture_pieces(int row,int col,State &state)
                     int q=temp.back()%8;
                     temp.pop_back();
                     state.board_state[p][q]=1 - state.board_state[p][q];
-                    QMetaObject::invokeMethod(board_obj, "change_color",
-                                              Q_ARG(QVariant,p),
-                                              Q_ARG(QVariant,q),
-                                              Q_ARG(QVariant,color_string));
+                    if(reflect_changes)
+                        QMetaObject::invokeMethod(board_obj, "change_color",
+                                                  Q_ARG(QVariant,p),
+                                                  Q_ARG(QVariant,q),
+                                                  Q_ARG(QVariant,color_string));
                 }
                 break;
             }
@@ -362,10 +379,11 @@ void Board::capture_pieces(int row,int col,State &state)
                     int q=temp.back()%8;
                     temp.pop_back();
                     state.board_state[p][q]=1 - state.board_state[p][q];
-                    QMetaObject::invokeMethod(board_obj, "change_color",
-                                              Q_ARG(QVariant,p),
-                                              Q_ARG(QVariant,q),
-                                              Q_ARG(QVariant,color_string));
+                    if(reflect_changes)
+                        QMetaObject::invokeMethod(board_obj, "change_color",
+                                                  Q_ARG(QVariant,p),
+                                                  Q_ARG(QVariant,q),
+                                                  Q_ARG(QVariant,color_string));
                 }
                 break;
             }
@@ -388,10 +406,11 @@ void Board::capture_pieces(int row,int col,State &state)
                     int q=temp.back()%8;
                     temp.pop_back();
                     state.board_state[p][q]=1 - state.board_state[p][q];
-                    QMetaObject::invokeMethod(board_obj, "change_color",
-                                              Q_ARG(QVariant,p),
-                                              Q_ARG(QVariant,q),
-                                              Q_ARG(QVariant,color_string));
+                    if(reflect_changes)
+                        QMetaObject::invokeMethod(board_obj, "change_color",
+                                                  Q_ARG(QVariant,p),
+                                                  Q_ARG(QVariant,q),
+                                                  Q_ARG(QVariant,color_string));
                 }
                 break;
             }
@@ -415,10 +434,11 @@ void Board::capture_pieces(int row,int col,State &state)
                     int q=temp.back()%8;
                     temp.pop_back();
                     state.board_state[p][q]=1 - state.board_state[p][q];
-                    QMetaObject::invokeMethod(board_obj, "change_color",
-                                              Q_ARG(QVariant,p),
-                                              Q_ARG(QVariant,q),
-                                              Q_ARG(QVariant,color_string));
+                    if(reflect_changes)
+                        QMetaObject::invokeMethod(board_obj, "change_color",
+                                                  Q_ARG(QVariant,p),
+                                                  Q_ARG(QVariant,q),
+                                                  Q_ARG(QVariant,color_string));
                 }
                 break;
             }
@@ -442,10 +462,11 @@ void Board::capture_pieces(int row,int col,State &state)
                     int q=temp.back()%8;
                     temp.pop_back();
                     state.board_state[p][q]=1 - state.board_state[p][q];
-                    QMetaObject::invokeMethod(board_obj, "change_color",
-                                              Q_ARG(QVariant,p),
-                                              Q_ARG(QVariant,q),
-                                              Q_ARG(QVariant,color_string));
+                    if(reflect_changes)
+                        QMetaObject::invokeMethod(board_obj, "change_color",
+                                                  Q_ARG(QVariant,p),
+                                                  Q_ARG(QVariant,q),
+                                                  Q_ARG(QVariant,color_string));
                 }
                 break;
             }
@@ -469,10 +490,11 @@ void Board::capture_pieces(int row,int col,State &state)
                     int q=temp.back()%8;
                     temp.pop_back();
                     state.board_state[p][q]=1 - state.board_state[p][q];
-                    QMetaObject::invokeMethod(board_obj, "change_color",
-                                              Q_ARG(QVariant,p),
-                                              Q_ARG(QVariant,q),
-                                              Q_ARG(QVariant,color_string));
+                    if(reflect_changes)
+                        QMetaObject::invokeMethod(board_obj, "change_color",
+                                                  Q_ARG(QVariant,p),
+                                                  Q_ARG(QVariant,q),
+                                                  Q_ARG(QVariant,color_string));
                 }
                 break;
             }
@@ -483,7 +505,7 @@ void Board::capture_pieces(int row,int col,State &state)
 
 bool Board::has_game_ended(State &state)
 {
-   bool move_list[64]={false};
+    bool move_list[64]={false};
     set_valid_moves(state.current_color,state,move_list);
     bool current_color_move=false;
     for(int i=0;i<64;i++)
@@ -716,8 +738,8 @@ int Board::mobility(State &state)
         return (100 * my_moves ) / (my_moves + opponent_moves);
     else if(my_moves < opponent_moves)
         return (-100 * opponent_moves) / (my_moves + opponent_moves);
-     else
-         return 0;
+    else
+        return 0;
 }
 
 Tree_Node *Board::get_empty_node()
@@ -728,6 +750,7 @@ Tree_Node *Board::get_empty_node()
     tn->best_child = NULL;
     return tn;
 }
+
 State *Board::duplicate_state(State &state)
 {
     State *temp = (State*)malloc(sizeof(State));
@@ -754,7 +777,9 @@ void Board::create_tree(Tree_Node *root,int current_level,int depth)
             temp->move[1] = i%8;
             temp->state = duplicate_state(*(root->state));
             temp->state->board_state[i/8][i%8] = temp->state->current_color;
-            capture_pieces(i/8,i%8,*(temp->state));
+            cout << current_level << " : " << i / 8 << " : " << i % 8 << endl;
+            capture_pieces(i/8,i%8,*(temp->state),false);
+            print_board(*temp->state);
             temp->state->current_color = 1 - temp->state->current_color;
             temp->state->opponent_color = 1 - temp->state->current_color;
             root->children.push_back(temp);
@@ -803,4 +828,10 @@ double Board::mini_max(Tree_Node *root,int depth,int player,int current_color,do
     return current_value;
 }
 
+int Board::get_move(Tree_Node *root,int depth,int player,int current_color)
+{
+    mini_max(root,depth,player,current_color,-1*INF,INF);
+    root = root->best_child;
+    return root->move[0] * 8 + root->move[1];
+}
 
