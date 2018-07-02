@@ -7,16 +7,33 @@ Window {
     width: 640
     height: 440
     title: qsTr("REVERSI")
+    property bool initialized: false
+    function initialize()
+    {
+        initialized = true
+    }
+
     RowLayout {
         anchors.fill: parent
 
         Board {
             id : board
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            visible: initialized
         }
+
+        Home {
+            id : home
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            visible: !initialized
+            height: parent.height
+            width: parent.width
+        }
+
         Controls {
             id : controls
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            visible: initialized
         }
     }
 

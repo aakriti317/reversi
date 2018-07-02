@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <board.h>
 
+
 int main(int argc, char *argv[])
 {
 #if defined(Q_OS_WIN)
@@ -17,6 +18,8 @@ int main(int argc, char *argv[])
     QObject *rootobject = engine.rootObjects().first();
     QObject *bobj=rootobject->findChild<QObject*>("board");
     QObject *cobj=rootobject->findChild<QObject*>("controls");
-    Board board(bobj,cobj);
+    QObject *hobj=rootobject->findChild<QObject*>("home");
+
+    Board board(rootobject,bobj,cobj,hobj);
     return app.exec();
 }

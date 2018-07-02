@@ -37,6 +37,7 @@ struct Player
 {
     int type;
     int color;
+    int intelligence;
 };
 
 class Board : public QObject
@@ -44,9 +45,10 @@ class Board : public QObject
     Q_OBJECT
 public slots:
     void piece_added_slot(const qint32 row,const qint32 column);
+    void start_slot(const qint32 player1_type,const qint32 player2_type,const qint32 player1_intelligence,const qint32 player2_intelligence);
 
 public:
-    Board(QObject *bobj,QObject *cobj);
+    Board(QObject *root,QObject *bobj,QObject *cobj,QObject *hobj);
     void occupy_cell(int row, int column, State *state);
     void print_board(State *state);
     void set_valid_moves(int color, State *state, bool *move_list);
@@ -70,14 +72,17 @@ public:
 
 private:
     QObject *board_obj;
+    QObject *root_object;
     QObject *controls_object;
+    QObject *home_obj;
     State state;
     int score_board[2]={0};
     bool game_ended = false;
     Player player1;
     Player player2;
-    int depth = 2;
 
 };
 
 #endif // BOARD_H
+
+//int player1_type,int player2_type,int player1_intelligence,int player2_intelligence

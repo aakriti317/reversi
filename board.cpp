@@ -2,21 +2,35 @@
 #include <QDebug>
 #include <iostream>
 using namespace std;
-Board::Board(QObject *bobj,QObject *cobj)
+Board::Board(QObject *root,QObject *bobj,QObject *cobj,QObject *hobj)
 {
     board_obj=bobj;
     controls_object=cobj;
+    home_obj = hobj;
+    root_object = root;
     QObject::connect(board_obj, SIGNAL(piece_added_signal(qint32,qint32)),
                      this, SLOT(piece_added_slot(qint32,qint32)));
+    QObject::connect(home_obj, SIGNAL(start_signal(qint32,qint32,qint32,qint32)),
+                     this, SLOT(start_slot(qint32,qint32,qint32,qint32)));
+
+}
+
+void Board::start_slot(const qint32 player1_type,const qint32 player2_type,const qint32 player1_intelligence,const qint32 player2_intelligence)
+{
     for(int row=0;row<8;row++)
         for(int col=0;col<8;col++)
             state.board_state[row][col]=EMPTY;
-    player1.type = COMPUTER;
-    player2.type = COMPUTER;
+    player1.type = player1_type;
+    player2.type = player2_type;
     player1.color = BLACK;
     player2.color = WHITE;
+    player1.intelligence = player1_intelligence;
+    player2.intelligence = player2_intelligence;
     state.current_color=player1.color;
     state.opponent_color=player2.color;
+
+    QMetaObject::invokeMethod(root_object, "initialize");
+
     state.board_state[3][3]=WHITE;
     QMetaObject::invokeMethod(board_obj, "occupy_cell",
                               Q_ARG(QVariant,3),Q_ARG(QVariant,3),Q_ARG(QVariant,"WHITE"));
@@ -31,18 +45,16 @@ Board::Board(QObject *bobj,QObject *cobj)
                               Q_ARG(QVariant,4),Q_ARG(QVariant,3),Q_ARG(QVariant,"BLACK"));
     QMetaObject::invokeMethod(controls_object, "status_update",
                               Q_ARG(QVariant,"BLACK's Turn"));
-    if(player1.type == COMPUTER)
+    if(player1.color == state.current_color && player1.type == COMPUTER)
     {
-//        Tree_Node *root = get_empty_node();
-//        root->state = duplicate_state(&state);
-//        create_tree(root,0,0);
-//        int move = get_move(root,depth,player1.color,player1.color);
-//        cout << move / 8 << ":" << move % 8 << endl;
-//        piece_added_slot(move / 8, move % 8);
+        Tree_Node *root = get_empty_node();
+        root->state = duplicate_state(&state);
+        create_tree(root,0,player1.intelligence);
+        int move = get_move(root,player1.intelligence,player1.color,player1.color);
+        cout << move / 8 << ":" << move % 8 << endl;
+        piece_added_slot(move / 8, move % 8);
     }
-
 }
-
 void Board::piece_added_slot(const qint32 row, const qint32 column)
 {
     bool move_list[64]={false};
@@ -67,6 +79,7 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
     else
     {
         state.current_color=1-state.current_color;
+        state.opponent_color=1-state.current_color;
         chance_flipped=true;
         QMetaObject::invokeMethod(controls_object, "status_update",
                                   Q_ARG(QVariant,"No more moves left, passing the turn"));
@@ -93,6 +106,24 @@ void Board::piece_added_slot(const qint32 row, const qint32 column)
             message="BLACK's Turn";
         QMetaObject::invokeMethod(controls_object, "status_update",
                                   Q_ARG(QVariant,message));
+        if(player1.color == state.current_color && player1.type == COMPUTER)
+        {
+            Tree_Node *root = get_empty_node();
+            root->state = duplicate_state(&state);
+            create_tree(root,0,player1.intelligence);
+            int move = get_move(root,player1.intelligence,player1.color,player1.color);
+            cout << move / 8 << ":" << move % 8 << endl;
+            piece_added_slot(move / 8, move % 8);
+        }
+        else if(player2.color == state.current_color && player2.type == COMPUTER)
+        {
+            Tree_Node *root = get_empty_node();
+            root->state = duplicate_state(&state);
+            create_tree(root,0,player2.intelligence);
+            int move = get_move(root,player2.intelligence,player2.color,player2.color);
+            cout << move / 8 << ":" << move % 8 << endl;
+            piece_added_slot(move / 8, move % 8);
+        }
     }
 }
 
@@ -779,8 +810,6 @@ void Board::create_tree(Tree_Node *root,int current_level,int depth)
             temp->state = duplicate_state((root->state));
             temp->state->board_state[i/8][i%8] = temp->state->current_color;
             capture_pieces(i/8,i%8,(temp->state),false);
-            cout << current_level << " : " << i / 8 << " : " << i % 8 << endl;
-//            print_board(*temp->state);
             temp->state->current_color = 1 - temp->state->current_color;
             temp->state->opponent_color = 1 - temp->state->current_color;
             root->children.push_back(temp);

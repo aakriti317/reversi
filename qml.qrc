@@ -4,5 +4,6 @@
         <file>Board.qml</file>
         <file>Controls.qml</file>
         <file>Piece.qml</file>
+        <file>Home.qml</file>
     </qresource>
 </RCC>

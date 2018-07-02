@@ -5,6 +5,7 @@ import QtQuick.Controls 1.4
 
 Item
 {
+
     objectName: "controls"
     function set_score_board(b_score,w_score)
     {
@@ -31,16 +32,11 @@ Item
 
             Button
             {
-                text: "START"
-                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-                Layout.fillWidth: true
-                //highlighted: true
-            }
-            Button
-            {
                 text: "QUIT"
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 Layout.fillWidth: true
+                onClicked: Qt.quit()
+
             }
             Label
             {
